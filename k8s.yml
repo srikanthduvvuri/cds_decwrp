@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: decision-wrapper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: decision-wrapper
+  template:
+    metadata:
+      labels:
+        app: decision-wrapper
+    spec:
+      containers:
+      - name: decision-wrapper
+        image: decision-wrapper:latest
+        ports:
+        - containerPort: 5001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: decision-wrapper
+spec:
+  selector:
+    app: decision-wrapper
+  ports:
+    - protocol: TCP
+      port: 5001
+      targetPort: 5001
