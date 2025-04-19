@@ -6,11 +6,14 @@ import credit_decision_pb2_grpc
 import random
 import logging
 import time
+import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
 
-IDENTITY_VERIFICATION_URL = "http://identity-verification:5002/verify-identity"
-# IDENTITY_VERIFICATION_URL = "http://localhost:5002/verify-identity"
+# Only load .env.local when not running in Docker
+if os.getenv("DOCKER_ENV") != "true":
+    load_dotenv(dotenv_path=".env.local")
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -18,6 +21,12 @@ logging.basicConfig(level=logging.INFO)
 def performidentity_verification(applicant_info):
     start_time = time.time()
     logger.info(f">> Performing identity verification for : {applicant_info}")
+
+    IV_HOST = os.getenv("IDENTITYVERIFICATION_HOST", "localhost:5002")
+    IDENTITY_VERIFICATION_URL = f"http://{IV_HOST}/verify-identity"
+    # IDENTITY_VERIFICATION_URL = "http://identity-verification:5002/verify-identity"
+    # IDENTITY_VERIFICATION_URL = "http://localhost:5002/verify-identity"
+    logger.info(f">> Identity verification URL: {IDENTITY_VERIFICATION_URL}")
     identity_response = requests.post(IDENTITY_VERIFICATION_URL, json={"applicant_info": applicant_info})
     logger.info(f">> Identity verification response: {identity_response.status_code}, {identity_response.text}")
     identity_data = identity_response.json()
@@ -59,7 +68,9 @@ def process_application():
 def performcredit_decision(applicant_info, identity_data):
     start_time = time.time()
     logger.info(f">> Performing Credit decision for : {applicant_info}, {identity_data}")
-    with grpc.insecure_channel('credit-decision:5005') as channel:
+    CD_HOST = os.getenv("CREDITDECISION_HOST", "localhost:5005")
+    with grpc.insecure_channel(CD_HOST) as channel:
+#    with grpc.insecure_channel('credit-decision:5005') as channel:
 #    with grpc.insecure_channel('localhost:5005') as channel:
         stub = credit_decision_pb2_grpc.CreditDecisionServiceStub(channel)
         request_msg = credit_decision_pb2.CreditDecisionRequest(
